@@ -1,0 +1,39 @@
+import requests
+from bs4 import BeautifulSoup
+
+def get_novel_chapters():
+	root_url = "https://www.haobiquge.com/read/37312/"	 #这个是笔趣阁的"三寸人间"的url,如果想爬别的网站的小说,需替换.
+	r = requests.get(root_url)
+	r.encoding = 'utf-8'					 # 查看网站的源代码, "charset=utf-8" 如果是gdk就改成gdk
+	soup = BeautifulSoup(r.text, "html.parser")
+	data = []
+	for dd in soup.find_all("dd"):
+		link = dd.find("a")
+		if not link:
+			continue
+		data.append(("https://www.haobiquge.com%s" % link['href'], link.get_text()))  
+
+	return data
+
+def get_chapter_content(url):
+	r = requests.get(url)
+	r.encoding = 'utf-8'
+	soup = BeautifulSoup(r.text, "html.parser")
+	tt = soup.find("div", id = 'TXT').get_text("\n", '<dr>')
+	return tt
+
+	#如果不给get_text()函数传递参数的话,小说里是没有换行的,看着密密麻麻很累.
+	#传递这两个参数的作用是把文本里的<dr>都换成换行符.
+  	#之前试过replace,但是没用,试了一下txt打印出来后才知道get_text()只提取文本,那就表示赋给txt的文本里面根本就没有<dr>
+  	#所以replace("<dr>", '\n')等于无效代码.
+ 
+
+novel_chapter = get_novel_chapters()
+idx = 0
+for chapter in novel_chapter:
+	idx += 1
+	print(idx)
+	url, title = chapter
+	with open("三寸人间.txt", 'a', encoding= 'utf-8') as fout:
+		fout.write(title + '\n' + get_chapter_content(url) + '\n')
+	#给with open()传递的'a'意思是 指向文本结尾并写入数据,就是整本小说写在一个.txt文件.如果想一章就是一个.txt文件的话,传入'w'参数
